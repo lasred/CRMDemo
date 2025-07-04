@@ -470,6 +470,67 @@ const handleRequest = async (req, res) => {
     }
   }
 
+  // Individual company routes
+  if (pathname.match(/^\/api\/companies\/[\w-]+$/)) {
+    const id = pathname.split('/')[3];
+    const companyIndex = db.companies.findIndex(c => c._id === id);
+    
+    if (method === 'GET') {
+      if (companyIndex === -1) {
+        res.writeHead(404, corsHeaders);
+        return res.end(JSON.stringify({ message: 'Company not found' }));
+      }
+      res.writeHead(200, corsHeaders);
+      return res.end(JSON.stringify(db.companies[companyIndex]));
+    }
+    
+    if (method === 'PUT') {
+      if (companyIndex === -1) {
+        res.writeHead(404, corsHeaders);
+        return res.end(JSON.stringify({ message: 'Company not found' }));
+      }
+      db.companies[companyIndex] = {
+        ...db.companies[companyIndex],
+        ...body,
+        updatedAt: new Date().toISOString()
+      };
+      res.writeHead(200, corsHeaders);
+      return res.end(JSON.stringify(db.companies[companyIndex]));
+    }
+    
+    if (method === 'DELETE') {
+      if (companyIndex === -1) {
+        res.writeHead(404, corsHeaders);
+        return res.end(JSON.stringify({ message: 'Company not found' }));
+      }
+      db.companies.splice(companyIndex, 1);
+      res.writeHead(200, corsHeaders);
+      return res.end(JSON.stringify({ message: 'Company deleted' }));
+    }
+  }
+
+  // Company related data endpoints
+  if (pathname.match(/^\/api\/companies\/[\w-]+\/contacts$/)) {
+    const id = pathname.split('/')[3];
+    const contacts = db.contacts.filter(c => c.company?._id === id || c.company === id);
+    res.writeHead(200, corsHeaders);
+    return res.end(JSON.stringify(contacts));
+  }
+
+  if (pathname.match(/^\/api\/companies\/[\w-]+\/deals$/)) {
+    const id = pathname.split('/')[3];
+    const deals = db.deals.filter(d => d.company?._id === id || d.company === id);
+    res.writeHead(200, corsHeaders);
+    return res.end(JSON.stringify(deals));
+  }
+
+  if (pathname.match(/^\/api\/companies\/[\w-]+\/activities$/)) {
+    const id = pathname.split('/')[3];
+    const activities = db.activities.filter(a => a.relatedTo?.id === id);
+    res.writeHead(200, corsHeaders);
+    return res.end(JSON.stringify(activities));
+  }
+
   // Deals CRUD
   if (pathname === '/api/deals') {
     if (method === 'GET') {
